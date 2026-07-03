@@ -57,9 +57,9 @@ python train.py
 
 Al finalizar la ejecución, podrá visualizar y comparar las diferentes corridas y versiones del modelo directamente en la interfaz de MLflow UI.
 
-## 📁 Estructura del Repositorio
+## 👥 Integrantes del Grupo
 
-- **Estudiante A (Líder / Infraestructura)**
-- **Estudiante B (Módulo Inteligente / IA)**
-- **Estudiante C (Automatización / n8n)**
-- **Estudiante D (Arquitectura / Calidad)**
+- **Bruno Chochoca (Líder / Infraestructura)**
+- **Bruno Pumapillo (Módulo Inteligente / IA)**
+- **Kiltom Adolfo (Automatización / n8n)**
+- **Carlos Montenegro (Arquitectura / Calidad)**

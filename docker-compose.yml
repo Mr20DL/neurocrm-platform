@@ -1,0 +1,47 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: neurocrm_db
+    restart: always
+    environment:
+      POSTGRES_USER: neuro_user
+      POSTGRES_PASSWORD: neuro_password
+      POSTGRES_DB: neurocrm
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: neurocrm_n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - postgres
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: neurocrm_mlflow
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlflow
+
+volumes:
+  postgres_data:
+  n8n_data:
+  mlflow_data:

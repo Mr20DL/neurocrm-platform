@@ -30,7 +30,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 # Variación 1 (Base)
-hidden_layers = (32, 16)  
+hidden_layers = (32, 16)
 learning_rate = 0.01
 
 # Variación 2 (Deep / más capas, learning rate más bajo)
@@ -41,29 +41,29 @@ learning_rate = 0.01
 # hidden_layers = (8, 4)
 # learning_rate = 0.05
 
-
+model = make_pipeline(
+    StandardScaler(),
+    MLPClassifier(
+        hidden_layer_sizes=hidden_layers,
+        learning_rate_init=learning_rate,
+        max_iter=500,
+        random_state=42
+    )
+)
 
 with mlflow.start_run():
-    model = make_pipeline(
-        StandardScaler(),
-        MLPClassifier(
-            hidden_layer_sizes=hidden_layers,
-            learning_rate_init=learning_rate,
-            max_iter=500,
-            random_state=42
-        )
+    model.fit(X_train, y_train)
+
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
+
+    mlflow.log_param("hidden_layer_sizes", str(hidden_layers))
+    mlflow.log_param("learning_rate_init", learning_rate)
+    mlflow.log_metric("accuracy", accuracy)
+    mlflow.sklearn.log_model(
+        model,
+        "neurocrm_mlp_model",
+        serialization_format="pickle"
     )
 
-model.fit(X_train, y_train)
-
-predictions = model.predict(X_test)
-accuracy = accuracy_score(y_test, predictions)
-mlflow.log_param("hidden_layer_sizes", str(hidden_layers))
-mlflow.log_param("learning_rate_init", learning_rate)
-mlflow.log_metric("accuracy", accuracy)
-mlflow.sklearn.log_model(
-    model,
-    "neurocrm_mlp_model",
-    serialization_format="pickle"
-)
-print(f"Modelo entrenado con éxito. Accuracy: {accuracy}. Registrado en MLflow.")
+    print(f"Modelo entrenado con éxito. Accuracy: {accuracy}. Registrado en MLflow.")

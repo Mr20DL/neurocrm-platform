@@ -218,3 +218,10 @@ __marimo__/
 .streamlit/secrets.toml
 
 mlflow.db
+mlartifacts/
+mlruns/
+
+# Internal documentation
+informe-mlops.md
+mlops-division.md
+Proyecto.md

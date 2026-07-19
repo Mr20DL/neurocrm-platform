@@ -1,5 +1,7 @@
-services:
+version: '3.8'
 
+services:
+  # 1. Base de Datos Relacional
   postgres:
     image: postgres:15-alpine
     container_name: neurocrm_db
@@ -12,7 +14,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - neurocrm_network
 
+  # 2. Orquestador de Flujos
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
     container_name: neurocrm_n8n
@@ -25,7 +30,11 @@ services:
       - n8n_data:/home/node/.n8n
     depends_on:
       - postgres
+      - fastapi-ai
+    networks:
+      - neurocrm_network
 
+  # 3. Servidor de MLOps (De la tarea anterior)
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
     container_name: neurocrm_mlflow
@@ -33,15 +42,48 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - mlflow_data:/mlflow
+      - ./ia-module/mlartifacts:/mlflow # Mapeado a tu carpeta local de artefactos
     command: >
       mlflow server
       --host 0.0.0.0
       --port 5000
       --backend-store-uri sqlite:///mlflow.db
       --default-artifact-root /mlflow
+    networks:
+      - neurocrm_network
+
+  # 4. Microservicio de IA (FastAPI) - ¡NUEVO COMPONENTE!
+  fastapi-ai:
+    build:
+      context: ./ia-module
+      dockerfile: Dockerfile
+    container_name: neurocrm_ai
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ia-module:/app # Mapeo en tiempo real para desarrollo local
+    environment:
+      - MODEL_PATH_SCORING=/app/mlartifacts/1/m-30fc4b534e1f4bec8e72aa32e10f7.../model.pkl
+      - MODEL_PATH_CHURN=/app/mlartifacts/1/m-8907a2becb154fcd8d9b5e3009d7.../model.pkl
+    networks:
+      - neurocrm_network
+
+  # 5. Servidor de Correos Falso para Pruebas Locales (Mailpit) - ¡NUEVO COMPONENTE!
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: neurocrm_mailpit
+    restart: always
+    ports:
+      - "1025:1025" # Puerto SMTP para que n8n mande correos
+      - "8025:8025" # Interfaz Web para que ustedes vean los correos enviados
+    networks:
+      - neurocrm_network
 
 volumes:
   postgres_data:
   n8n_data:
-  mlflow_data:
+
+networks:
+  neurocrm_network:
+    driver: bridge

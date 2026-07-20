@@ -1,0 +1,177 @@
+{
+  "name": "NeuroCRM - Churn Prediction",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "churn-prediction",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-churn",
+      "name": "Webhook - Chequeo Churn",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "churn-prediction"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi-ai:8000/predict/churn",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"antiguedad_meses\": {{$json.body.antiguedad_meses}},\n  \"dias_inactividad\": {{$json.body.dias_inactividad}},\n  \"interacciones_30d\": {{$json.body.interacciones_30d}},\n  \"quejas_registradas\": {{$json.body.quejas_registradas}}\n}",
+        "options": {}
+      },
+      "id": "http-request-churn",
+      "name": "HTTP Request - FastAPI Churn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "churn_historial"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "antiguedad_meses": "={{$('Webhook - Chequeo Churn').item.json.body.antiguedad_meses}}",
+            "dias_inactividad": "={{$('Webhook - Chequeo Churn').item.json.body.dias_inactividad}}",
+            "interacciones_30d": "={{$('Webhook - Chequeo Churn').item.json.body.interacciones_30d}}",
+            "quejas_registradas": "={{$('Webhook - Chequeo Churn').item.json.body.quejas_registradas}}",
+            "probabilidad_churn": "={{$json.probabilidad_churn}}",
+            "riesgo_abandono": "={{$json.riesgo_abandono}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "postgres-churn",
+      "name": "Postgres - Guardar Historial Churn",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [680, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REEMPLAZAR_CON_TU_CREDENCIAL",
+          "name": "Postgres NeuroCRM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.riesgo_abandono}}",
+              "rightValue": "ALTO",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-riesgo-alto",
+      "name": "IF - Riesgo Alto",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"alerta\", \"mensaje\": \"Cliente en riesgo alto de abandono\", \"probabilidad_churn\": $json.probabilidad_churn } }}",
+        "options": {}
+      },
+      "id": "respond-alerta",
+      "name": "Respond - Alerta Riesgo Alto",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"ok\", \"probabilidad_churn\": $json.probabilidad_churn, \"riesgo_abandono\": $json.riesgo_abandono } }}",
+        "options": {}
+      },
+      "id": "respond-normal",
+      "name": "Respond - Riesgo Normal",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 380]
+    }
+  ],
+  "connections": {
+    "Webhook - Chequeo Churn": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - FastAPI Churn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - FastAPI Churn": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Guardar Historial Churn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Guardar Historial Churn": {
+      "main": [
+        [
+          {
+            "node": "IF - Riesgo Alto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Riesgo Alto": {
+      "main": [
+        [
+          {
+            "node": "Respond - Alerta Riesgo Alto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Riesgo Normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

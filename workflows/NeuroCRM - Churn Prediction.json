@@ -1,0 +1,510 @@
+{
+  "name": "NeuroCRM - Churn Prediction",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-scoring",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "db42f309-4266-455a-b98a-a4187bcccdb1",
+      "name": "Webhook - Nuevo Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        0
+      ],
+      "webhookId": "lead-scoring"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi-ai:8000/predict/lead-score",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"presupuesto_min\": {{$json.body.presupuesto_min}},\n  \"fuente_lead\": {{$json.body.fuente_lead}},\n  \"tipo_propiedad\": {{$json.body.tipo_propiedad}},\n  \"interacciones_iniciales\": {{$json.body.interacciones_iniciales}}\n}",
+        "options": {}
+      },
+      "id": "091e8988-a72f-41dc-8181-4ff1d92ecf6c",
+      "name": "HTTP Request - FastAPI Lead Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -352,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "leads_historial"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fuente_lead": "=\t{{ $('Webhook - Nuevo Lead').item.json.body.fuente_lead }}",
+            "tipo_propiedad": "=\t{{ $('Webhook - Nuevo Lead').item.json.body.tipo_propiedad }}",
+            "interacciones_iniciales": "={{ $('Webhook - Nuevo Lead').item.json.body.interacciones_iniciales }}",
+            "score": "=\t{{ $json.score }}",
+            "categoria": "={{ $json.categoria }}",
+            "presupuesto_min": "=\t{{ $('Webhook - Nuevo Lead').item.json.body.presupuesto_min }}",
+            "id": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "presupuesto_min",
+              "displayName": "presupuesto_min",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fuente_lead",
+              "displayName": "fuente_lead",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo_propiedad",
+              "displayName": "tipo_propiedad",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "interacciones_iniciales",
+              "displayName": "interacciones_iniciales",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "creado_en",
+              "displayName": "creado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "925fc93f-17da-43fe-83a3-753a060e3ea3",
+      "name": "Postgres - Guardar Historial Lead",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -128,
+        -16
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "JtEUu5DzxgljIH8y",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"guardado\", \"score\": $json.score, \"categoria\": $json.categoria } }}",
+        "options": {}
+      },
+      "id": "9abcfb6f-df8f-499c-8bfc-93afba3e1a16",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "churn-prediction",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a2e45515-d0cb-415d-9937-b86b9f7d7a77",
+      "name": "Webhook - Chequeo Churn",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        320
+      ],
+      "webhookId": "churn-prediction"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi-ai:8000/predict/churn",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"antiguedad_meses\": {{$json.body.antiguedad_meses}},\n  \"dias_inactividad\": {{$json.body.dias_inactividad}},\n  \"interacciones_30d\": {{$json.body.interacciones_30d}},\n  \"quejas_registradas\": {{$json.body.quejas_registradas}}\n}",
+        "options": {}
+      },
+      "id": "ab3cda0e-427a-4263-aa43-9e0ec2af5972",
+      "name": "HTTP Request - FastAPI Churn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -400,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "churn_historial",
+          "mode": "list",
+          "cachedResultName": "churn_historial"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "antiguedad_meses": "=\t{{ $('Webhook - Chequeo Churn').item.json.body.antiguedad_meses }}",
+            "dias_inactividad": "=\t{{ $('Webhook - Chequeo Churn').item.json.body.dias_inactividad }}",
+            "interacciones_30d": "=\t{{ $('Webhook - Chequeo Churn').item.json.body.interacciones_30d }}",
+            "quejas_registradas": "=\t{{ $('Webhook - Chequeo Churn').item.json.body.quejas_registradas }}",
+            "probabilidad_churn": 95,
+            "riesgo_abandono": "\t{{ $json.riesgo_abandono}}",
+            "id": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "antiguedad_meses",
+              "displayName": "antiguedad_meses",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dias_inactividad",
+              "displayName": "dias_inactividad",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "interacciones_30d",
+              "displayName": "interacciones_30d",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "quejas_registradas",
+              "displayName": "quejas_registradas",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "probabilidad_churn",
+              "displayName": "probabilidad_churn",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "riesgo_abandono",
+              "displayName": "riesgo_abandono",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "creado_en",
+              "displayName": "creado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "9722f5e0-e020-4c82-8032-7ac1a5a98d68",
+      "name": "Postgres - Guardar Historial Churn",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -176,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "JtEUu5DzxgljIH8y",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.riesgo_abandono}}",
+              "rightValue": "ALTO",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "28a294c5-9d0f-4590-a750-eb439305a709",
+      "name": "IF - Riesgo Alto",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        48,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"alerta\", \"mensaje\": \"Cliente en riesgo alto de abandono\", \"probabilidad_churn\": $json.probabilidad_churn } }}",
+        "options": {}
+      },
+      "id": "f764c618-e463-48b5-85f6-888ed639db2d",
+      "name": "Respond - Alerta Riesgo Alto",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"ok\", \"probabilidad_churn\": $json.probabilidad_churn, \"riesgo_abandono\": $json.riesgo_abandono } }}",
+        "options": {}
+      },
+      "id": "03b44826-c66b-4fb3-a1c3-00dac91e1868",
+      "name": "Respond - Riesgo Normal",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        400
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Nuevo Lead": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - FastAPI Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - FastAPI Lead Score": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Guardar Historial Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Guardar Historial Lead": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Chequeo Churn": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - FastAPI Churn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - FastAPI Churn": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Guardar Historial Churn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Guardar Historial Churn": {
+      "main": [
+        [
+          {
+            "node": "IF - Riesgo Alto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Riesgo Alto": {
+      "main": [
+        [
+          {
+            "node": "Respond - Alerta Riesgo Alto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Riesgo Normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "13585c84-124f-4681-9826-479894fc2f08",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9d5fb1d0473d8aa01a3bd502f3358a8a2909971bb350643f44d971e4336ebbab"
+  },
+  "nodeGroups": [],
+  "id": "LmCBoYzjZM8xHltQ",
+  "tags": []
+}

@@ -1,0 +1,119 @@
+{
+  "name": "NeuroCRM - Lead Scoring",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-scoring",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-lead-scoring",
+      "name": "Webhook - Nuevo Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "lead-scoring"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi-ai:8000/predict/lead-score",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"presupuesto_min\": {{$json.body.presupuesto_min}},\n  \"fuente_lead\": {{$json.body.fuente_lead}},\n  \"tipo_propiedad\": {{$json.body.tipo_propiedad}},\n  \"interacciones_iniciales\": {{$json.body.interacciones_iniciales}}\n}",
+        "options": {}
+      },
+      "id": "http-request-lead-scoring",
+      "name": "HTTP Request - FastAPI Lead Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "value": "public"
+        },
+        "table": {
+          "value": "leads_historial"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "presupuesto_min": "={{$('Webhook - Nuevo Lead').item.json.body.presupuesto_min}}",
+            "fuente_lead": "={{$('Webhook - Nuevo Lead').item.json.body.fuente_lead}}",
+            "tipo_propiedad": "={{$('Webhook - Nuevo Lead').item.json.body.tipo_propiedad}}",
+            "interacciones_iniciales": "={{$('Webhook - Nuevo Lead').item.json.body.interacciones_iniciales}}",
+            "score": "={{$json.score}}",
+            "categoria": "={{$json.categoria}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "postgres-lead-scoring",
+      "name": "Postgres - Guardar Historial Lead",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [680, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REEMPLAZAR_CON_TU_CREDENCIAL",
+          "name": "Postgres NeuroCRM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"guardado\", \"score\": $json.score, \"categoria\": $json.categoria } }}",
+        "options": {}
+      },
+      "id": "respond-lead-scoring",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Nuevo Lead": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - FastAPI Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - FastAPI Lead Score": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Guardar Historial Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Guardar Historial Lead": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

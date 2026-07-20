@@ -17,6 +17,9 @@ Toda la solución ha sido construida bajo un enfoque técnico 100% local (localh
 El proyecto sigue una arquitectura limpia y separada por responsabilidades funcionales:
 
 - **/ia-module:** Contiene el backend de FastAPI (`main.py`), el Dockerfile del microservicio, el script de entrenamiento (`train.py`), los artefactos de MLflow (`.pkl`) y el dataset.
+- **/dataset:** Fuentes originales, datos procesados y scripts reproducibles del Entregable 6.
+- **/tests:** Payloads, ejecutores, matrices de resultados y evidencias de pruebas.
+- **/docs:** Informe técnico del Entregable 6.
 - **/workflows:** Flujos y pipelines lógicos estructurados, listos para ser importados en n8n (.json).
 - **/database:** Archivos de inicialización y esquemas de tablas SQL para la base de datos local.
 - **docker-compose.yml:** Manifiesto central que orquesta, interconecta y aisla en red todos los servicios de la plataforma.
